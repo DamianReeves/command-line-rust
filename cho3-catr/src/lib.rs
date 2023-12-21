@@ -60,15 +60,14 @@ fn print_lines<R: BufRead>(
     number_lines: bool,
     number_nonblank_lines: bool,
 ) -> MyResult<()> {
-    let mut line_number = 1;
-    for line_result in reader.lines() {
-        let line = line_result?;
+    let mut last_num = 0;
+    for (line_num, line) in reader.lines().enumerate() {
+        let line = line?;
         if number_lines {
-            println!("{:>6}\t{}", line_number, line);
-            line_number += 1;
+            println!("{:>6}\t{}", line_num + 1, line);
         } else if number_nonblank_lines && !line.is_empty() {
-            println!("{:>6}\t{}", line_number, line);
-            line_number += 1;
+            last_num += 1;
+            println!("{:>6}\t{}", last_num, line);
         } else {
             println!("{}", line);
         }
