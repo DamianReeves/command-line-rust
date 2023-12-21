@@ -1,5 +1,7 @@
 use clap::{App, Arg};
 use std::error::Error;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
 
 #[derive(Debug)]
 pub struct Config {
@@ -16,7 +18,14 @@ pub fn get_args() -> MyResult<Config> {
         .author("Damian Reeves")
         .about("Rust cat")
         .arg(
-            Arg::with_name("number_lines")
+            Arg::with_name("files")
+                .value_name("FILE")
+                .help("Input file(s)")
+                .multiple(true)
+                .default_value("-"),
+        )
+        .arg(
+            Arg::with_name("number")
                 .short("n")
                 .long("number")
                 .help("Number lines")
@@ -27,26 +36,31 @@ pub fn get_args() -> MyResult<Config> {
             Arg::with_name("number_nonblank_lines")
                 .short("b")
                 .long("number-nonblank")
-                .help("Number nonblank lines")
+                .help("Number non-blank lines")
                 .takes_value(false),
-        )
-        .arg(
-            Arg::with_name("file")
-                .value_name("FILE")
-                .help("Input file(s)")
-                .multiple(true)
-                .default_value("-"),
         )
         .get_matches();
 
     Ok(Config {
-        files: matches.values_of_lossy("file").unwrap(),
-        number_lines: matches.is_present("number_lines"),
+        files: matches.values_of_lossy("files").unwrap(),
+        number_lines: matches.is_present("number"),
         number_nonblank_lines: matches.is_present("number_nonblank_lines"),
     })
 }
 
+fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
+    match filename {
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
+    }
+}
+
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(config);
+    for filename in config.files {
+        match open(&filename) {
+            Err(err) => eprintln!("Failed to open {}: {}", filename, err),
+            Ok(_) => println!("Opened {}", filename),
+        }
+    }
     Ok(())
 }
