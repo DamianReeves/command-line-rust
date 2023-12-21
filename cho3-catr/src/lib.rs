@@ -55,11 +55,31 @@ fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
     }
 }
 
+fn print_lines<R: BufRead>(reader: R, number_lines: bool, number_nonblank_lines: bool) {
+    let mut line_number = 1;
+    for line in reader.lines() {
+        match line {
+            Err(err) => eprintln!("Error: {}", err),
+            Ok(line) => {
+                if number_lines {
+                    println!("{:>6}\t{}", line_number, line);
+                    line_number += 1;
+                } else if number_nonblank_lines && !line.is_empty() {
+                    println!("{:>6}\t{}", line_number, line);
+                    line_number += 1;
+                } else {
+                    println!("{}", line);
+                }
+            }
+        }
+    }
+}
+
 pub fn run(config: Config) -> MyResult<()> {
     for filename in config.files {
         match open(&filename) {
             Err(err) => eprintln!("Failed to open {}: {}", filename, err),
-            Ok(_) => println!("Opened {}", filename),
+            Ok(rdr) => print_lines(rdr, config.number_lines, config.number_nonblank_lines),
         }
     }
     Ok(())
